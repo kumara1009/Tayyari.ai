@@ -1,7 +1,7 @@
 "use client"
 import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Search, ChevronDown } from "lucide-react"
 import Navbar from "@/components/custom/navbar"
 import Link from "next/link"
@@ -54,29 +54,29 @@ const leaderboardData = [
 export default function Leaderboard() {
   const [searchTerm, setSearchTerm] = useState("")
   const [sortBy, setSortBy] = useState("rank")
+  const [sortedData, setSortedData] = useState(leaderboardData)
 
-  const filteredData = leaderboardData
-    .filter((user) => user.name.toLowerCase().includes(searchTerm.toLowerCase()))
-    .sort((a, b) => {
+  useEffect(() => {
+    const filtered = leaderboardData.filter((user) =>
+      user.name.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+
+    const sorted = [...filtered].sort((a, b) => {
       if (sortBy === "rank") return a.rank - b.rank
       if (sortBy === "level") return b.level - a.level
       if (sortBy === "xp") return b.xp - a.xp
       return 0
     })
 
+    setSortedData(sorted)
+  }, [sortBy, searchTerm])
+
   return (
     <main className="min-h-screen bg-[#fafafa]">
-      {/* Navbar */}
       <Navbar loggedIn={true} />
 
-      {/* Leaderboard header */}
       <section className="container mx-auto px-4 pt-16 pb-8">
-        <motion.div
-          className="max-w-4xl mx-auto text-center"
-          initial="initial"
-          animate="animate"
-          variants={staggerContainer}
-        >
+        <motion.div className="max-w-4xl mx-auto text-center" initial="initial" animate="animate" variants={staggerContainer}>
           <motion.h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6" variants={fadeInUp}>
             Leaderboard
           </motion.h1>
@@ -86,14 +86,8 @@ export default function Leaderboard() {
         </motion.div>
       </section>
 
-      {/* Leaderboard controls */}
       <section className="container mx-auto px-4 mb-8">
-        <motion.div
-          className="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4"
-          variants={staggerContainer}
-          initial="initial"
-          animate="animate"
-        >
+        <motion.div className="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4" variants={staggerContainer} initial="initial" animate="animate">
           <motion.div className="relative w-full sm:w-64" variants={fadeInUp}>
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
@@ -119,27 +113,19 @@ export default function Leaderboard() {
         </motion.div>
       </section>
 
-      {/* Leaderboard table */}
       <section className="container mx-auto px-4 py-8">
-        <motion.div
-          className="max-w-4xl mx-auto bg-white rounded-[2rem] shadow-lg overflow-hidden"
-          variants={scaleIn}
-          initial="initial"
-          animate="animate"
-        >
+        <motion.div className="max-w-4xl mx-auto bg-white rounded-[2rem] shadow-lg overflow-hidden" variants={scaleIn} initial="initial" animate="animate">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Level
-                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Level</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">XP</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredData.map((user, index) => (
+              {sortedData.map((user, index) => (
                 <motion.tr
                   key={user.rank}
                   variants={fadeInUp}
@@ -154,7 +140,7 @@ export default function Leaderboard() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-10 w-10">
-                        <img className="h-10 w-10 rounded-full" src={user.avatar || "/placeholder.svg"} alt="" />
+                        <img className="h-10 w-10 rounded-full" src={user.avatar} alt={user.name} />
                       </div>
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900">{user.name}</div>
@@ -174,7 +160,6 @@ export default function Leaderboard() {
         </motion.div>
       </section>
 
-      {/* CTA */}
       <section className="container mx-auto px-4 py-16">
         <motion.div
           className="bg-gradient-to-r from-blue-600 to-violet-600 text-white rounded-[2.5rem] p-16 text-center"
@@ -220,4 +205,3 @@ export default function Leaderboard() {
     </main>
   )
 }
-

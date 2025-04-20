@@ -15,7 +15,7 @@ import re
 import pdfplumber
 import torch
 import io
-from langchain.vectorstores import FAISS
+from langchain_community.vectorstores import FAISS
 from langchain_core.embeddings import Embeddings
 from typing import List
 from datetime import datetime

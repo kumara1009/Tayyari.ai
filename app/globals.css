@@ -74,6 +74,26 @@
   }
 }
 
+@keyframes borderShine {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-borderShine {
+  background: conic-gradient(from 0deg, #8b5cf6, #ec4899, #3b82f6, #8b5cf6);
+  animation: borderShine 6s linear infinite;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: destination-out;
+  padding: 3px;
+}
+
+
 .animate-float {
   animation: float 3s ease-in-out infinite;
 }

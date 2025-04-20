@@ -193,175 +193,176 @@ class AgentService:
 
         return handle_safety(self.model, safety_input, self._call_agent)
 
-    def start_new_topic(self, topic: str, user_background: Optional[str] = None, current_topic: Optional[str] = None, active_subtopic: Optional[str] = None, session_history: Optional[List[str]] = None) -> ExplorationAgentOutput:
-        """Begin a new learning topic."""
-        print('\n=== Starting Agent Pipeline ===')
-        print('Input:', topic)
-        
-        self.learning_state.current_topic = current_topic if current_topic != None else topic
-        self.learning_state.active_subtopic = active_subtopic if active_subtopic != None else topic
-        self.learning_state.session_history = session_history if session_history != None else []
+def start_new_topic(self, topic: str, user_background: Optional[str] = None, current_topic: Optional[str] = None, active_subtopic: Optional[str] = None, session_history: Optional[List[str]] = None) -> ExplorationAgentOutput:
+    """Begin a new learning topic."""
+    print('\n=== Starting Agent Pipeline ===')
+    print('Input:', topic)
+    
+    self.learning_state.current_topic = current_topic if current_topic is not None else topic
+    self.learning_state.active_subtopic = active_subtopic if active_subtopic is not None else topic
+    self.learning_state.session_history = session_history if session_history is not None else []
 
-        safety_check = self.run_safety_check(topic)
-        if safety_check.status != SafetyStatus.SAFE:
-            return ExplorationAgentOutput(
-                status=safety_check.status,
-                explanation=safety_check.explanation,
-                subtopics=[],
-                prerequisites=[],
-                summary=safety_check.explanation
-            )
-
-        classifier_input = AgentClassifierInput(
-            user_input=topic,
-            available_agents=[
-                {'name': 'exploration', 'description': 'Explores new topics'},
-                {'name': 'interactive', 'description': 'Handles questions and answers'},
-                {'name': 'question', 'description': 'Generates quiz questions'},
-                {'name': 'answerEval', 'description': 'Evaluates answers to questions'},
-                {'name': 'deepDive', 'description': 'Provides detailed concept breakdowns'},
-                {'name': 'flashcard', 'description': 'Creates study flashcards'},
-                {'name': 'cheatsheet', 'description': 'Generates quick reference guides'},
-                {'name': 'mermaid', 'description': 'Creates visual diagrams'},
-                {'name': 'config', 'description': 'Handles system configuration'}
-            ],
-            latest_context_summary='\n'.join(
-                entry['content'] for entry in self.learning_state.session_history
-            )
+    safety_check = self.run_safety_check(topic)
+    if safety_check.status != SafetyStatus.SAFE:
+        return ExplorationAgentOutput(
+            status=safety_check.status,
+            explanation=safety_check.explanation,
+            subtopics=[],
+            prerequisites=[],
+            summary=safety_check.explanation
         )
 
-        classification = handle_classification(self.model, classifier_input, self._call_agent)
-
-        if self.learning_state.awaiting_answer and self.learning_state.last_question:
-            return self._handle_answer_evaluation(topic)
-        
-        context_summary = '\n'.join(
+    classifier_input = AgentClassifierInput(
+        user_input=topic,
+        available_agents=[
+            {'name': 'exploration', 'description': 'Explores new topics'},
+            {'name': 'interactive', 'description': 'Handles questions and answers'},
+            {'name': 'question', 'description': 'Generates quiz questions'},
+            {'name': 'answerEval', 'description': 'Evaluates answers to questions'},
+            {'name': 'deepDive', 'description': 'Provides detailed concept breakdowns'},
+            {'name': 'flashcard', 'description': 'Creates study flashcards'},
+            {'name': 'cheatsheet', 'description': 'Generates quick reference guides'},
+            {'name': 'mermaid', 'description': 'Creates visual diagrams'},
+            {'name': 'config', 'description': 'Handles system configuration'}
+        ],
+        latest_context_summary='\n'.join(
             entry['content'] for entry in self.learning_state.session_history
         )
+    )
 
-        print("Agent: ", classification.next_agent)
+    classification = handle_classification(self.model, classifier_input, self._call_agent)
 
-        match classification.next_agent:
-            case 'exploration':
-                input_data = ExplorationAgentInput(
-                    user_prompt=topic,
-                    latest_context_summary=context_summary
-                )
-                return handle_exploration(self.model, input_data, self._call_agent)
+    if self.learning_state.awaiting_answer and self.learning_state.last_question:
+        return self._handle_answer_evaluation(topic)
 
-            case 'interactive':
-                input_data = InteractiveAgentInput(
-                    user_input=topic,
-                    latest_context_summary=context_summary
-                )
-                response = handle_interactive(self.model, input_data, self._call_agent)
-                return ExplorationAgentOutput(
-                    status=SafetyStatus.SAFE,
-                    explanation=response.response,
-                    subtopics=[],
-                    prerequisites=[],
-                    summary=response.response
-                )
+    context_summary = '\n'.join(
+        entry['content'] for entry in self.learning_state.session_history
+    )
 
-            case 'question':
-                input_data = QuestionAgentInput(
-                    subtopic=self.learning_state.active_subtopic,
-                    broader_topic=self.learning_state.current_topic,
-                    latest_context_summary=context_summary
-                )
-                response = handle_question(self.model, input_data, self._call_agent)
-                self.learning_state.last_question = response.question
-                self.learning_state.last_question_type = response.type
-                self.learning_state.awaiting_answer = True
-                return ExplorationAgentOutput(
-                    status=SafetyStatus.SAFE,
-                    explanation=response.question,
-                    subtopics=response.options if response.type == 'MCQ' else [],
-                    prerequisites=[],
-                    summary=response.question
-                )
+    print("Agent: ", classification.next_agent)
+    agent = classification.next_agent
 
-            case 'deepDive':
-                input_data = DeepDiveAgentInput(
-                    subtopic=self.learning_state.active_subtopic,
-                    broader_topic=self.learning_state.current_topic,
-                    latest_context_summary=context_summary
-                )
-                response = handle_deep_dive(self.model, input_data, self._call_agent)
-                return ExplorationAgentOutput(
-                    status=SafetyStatus.SAFE,
-                    explanation=response.breakdown,
-                    subtopics=[],
-                    prerequisites=[],
-                    summary=response.breakdown
-                )
+    if agent == 'exploration':
+        input_data = ExplorationAgentInput(
+            user_prompt=topic,
+            latest_context_summary=context_summary
+        )
+        return handle_exploration(self.model, input_data, self._call_agent)
 
-            case 'flashcard':
-                input_data = FlashcardAgentInput(
-                    broader_topic=self.learning_state.current_topic,
-                    subtopic=self.learning_state.active_subtopic,
-                    latest_context_summary=context_summary
-                )
-                response = handle_flashcard(self.model, input_data, self._call_agent)
-                return ExplorationAgentOutput(
-                    status=SafetyStatus.SAFE,
-                    explanation="Here are your study flashcards\n\n" + response.csv_content,
-                    subtopics=[],
-                    prerequisites=[],
-                    summary=context_summary
-                )
+    elif agent == 'interactive':
+        input_data = InteractiveAgentInput(
+            user_input=topic,
+            latest_context_summary=context_summary
+        )
+        response = handle_interactive(self.model, input_data, self._call_agent)
+        return ExplorationAgentOutput(
+            status=SafetyStatus.SAFE,
+            explanation=response.response,
+            subtopics=[],
+            prerequisites=[],
+            summary=response.response
+        )
 
-            case 'cheatsheet':
-                input_data = CheatsheetAgentInput(
-                    broader_topic=self.learning_state.current_topic,
-                    subtopic=self.learning_state.active_subtopic,
-                    latest_context_summary=context_summary
-                )
-                response = handle_cheatsheet(self.model, input_data, self._call_agent)
-                return ExplorationAgentOutput(
-                    status=SafetyStatus.SAFE,
-                    explanation=response.content,
-                    subtopics=[],
-                    prerequisites=[],
-                    summary=response.content
-                )
+    elif agent == 'question':
+        input_data = QuestionAgentInput(
+            subtopic=self.learning_state.active_subtopic,
+            broader_topic=self.learning_state.current_topic,
+            latest_context_summary=context_summary
+        )
+        response = handle_question(self.model, input_data, self._call_agent)
+        self.learning_state.last_question = response.question
+        self.learning_state.last_question_type = response.type
+        self.learning_state.awaiting_answer = True
+        return ExplorationAgentOutput(
+            status=SafetyStatus.SAFE,
+            explanation=response.question,
+            subtopics=response.options if response.type == 'MCQ' else [],
+            prerequisites=[],
+            summary=response.question
+        )
 
-            case 'mermaid':
-                input_data = MermaidAgentInput(
-                    broader_topic=self.learning_state.current_topic,
-                    subtopic=self.learning_state.active_subtopic,
-                    available_diagram_types=["graph", "flowchart", "sequence", "class", "state"],
-                    latest_context_summary=context_summary
-                )
-                response = handle_mermaid(self.model, input_data, self._call_agent)
-                return ExplorationAgentOutput(
-                    status=SafetyStatus.SAFE,
-                    explanation=response.mermaid_code,
-                    subtopics=[],
-                    prerequisites=[],
-                    summary=context_summary
-                )
+    elif agent == 'deepDive':
+        input_data = DeepDiveAgentInput(
+            subtopic=self.learning_state.active_subtopic,
+            broader_topic=self.learning_state.current_topic,
+            latest_context_summary=context_summary
+        )
+        response = handle_deep_dive(self.model, input_data, self._call_agent)
+        return ExplorationAgentOutput(
+            status=SafetyStatus.SAFE,
+            explanation=response.breakdown,
+            subtopics=[],
+            prerequisites=[],
+            summary=response.breakdown
+        )
 
-            case 'config':
-                input_data = ConfigAgentInput(
-                    user_input=topic,
-                    latest_context_summary=context_summary
-                )
-                response = handle_config(self.model, input_data, self._call_agent)
-                return ExplorationAgentOutput(
-                    status=SafetyStatus.SAFE,
-                    explanation=response.prompt_addition,
-                    subtopics=[],
-                    prerequisites=[],
-                    summary=response.prompt_addition
-                )
+    elif agent == 'flashcard':
+        input_data = FlashcardAgentInput(
+            broader_topic=self.learning_state.current_topic,
+            subtopic=self.learning_state.active_subtopic,
+            latest_context_summary=context_summary
+        )
+        response = handle_flashcard(self.model, input_data, self._call_agent)
+        return ExplorationAgentOutput(
+            status=SafetyStatus.SAFE,
+            explanation="Here are your study flashcards\n\n" + response.csv_content,
+            subtopics=[],
+            prerequisites=[],
+            summary=context_summary
+        )
 
-            case _:
-                input_data = ExplorationAgentInput(
-                    user_prompt=topic,
-                    latest_context_summary=context_summary
-                )
-                return handle_exploration(self.model, input_data, self._call_agent)
+    elif agent == 'cheatsheet':
+        input_data = CheatsheetAgentInput(
+            broader_topic=self.learning_state.current_topic,
+            subtopic=self.learning_state.active_subtopic,
+            latest_context_summary=context_summary
+        )
+        response = handle_cheatsheet(self.model, input_data, self._call_agent)
+        return ExplorationAgentOutput(
+            status=SafetyStatus.SAFE,
+            explanation=response.content,
+            subtopics=[],
+            prerequisites=[],
+            summary=response.content
+        )
+
+    elif agent == 'mermaid':
+        input_data = MermaidAgentInput(
+            broader_topic=self.learning_state.current_topic,
+            subtopic=self.learning_state.active_subtopic,
+            available_diagram_types=["graph", "flowchart", "sequence", "class", "state"],
+            latest_context_summary=context_summary
+        )
+        response = handle_mermaid(self.model, input_data, self._call_agent)
+        return ExplorationAgentOutput(
+            status=SafetyStatus.SAFE,
+            explanation=response.mermaid_code,
+            subtopics=[],
+            prerequisites=[],
+            summary=context_summary
+        )
+
+    elif agent == 'config':
+        input_data = ConfigAgentInput(
+            user_input=topic,
+            latest_context_summary=context_summary
+        )
+        response = handle_config(self.model, input_data, self._call_agent)
+        return ExplorationAgentOutput(
+            status=SafetyStatus.SAFE,
+            explanation=response.prompt_addition,
+            subtopics=[],
+            prerequisites=[],
+            summary=response.prompt_addition
+        )
+
+    else:
+        input_data = ExplorationAgentInput(
+            user_prompt=topic,
+            latest_context_summary=context_summary
+        )
+        return handle_exploration(self.model, input_data, self._call_agent)
+
 
     def get_session_summary(self) -> SummaryConsolidationAgentOutput:
         """Generate a summary of the learning session."""
