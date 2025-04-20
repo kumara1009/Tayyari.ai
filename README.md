@@ -35,6 +35,9 @@ Most educational platforms fail to:
 - **Other Tools**: Vercel, GitHub Actions, Clerk API
 
 ---
+🎥 Demo Video
+Watch the full walkthrough of Tayyari.ai in action: https://youtu.be/8RT-cVGGtHQ?si=q3LPBH9mPAMu4-rg
+Get a glimpse of how personalized, AI-powered learning feels like!
 
 ## 🛠️ Installation & Setup
 
@@ -102,7 +105,5 @@ We welcome contributions! Fork the repo and create a PR. Let's build a better wa
 For queries, suggestions or collaboration:
 📧 kumaranhariharanj@gmail.com
 
-🎥 Demo Video
-Watch the full walkthrough of Tayyari.ai in action: https://youtu.be/8RT-cVGGtHQ?si=q3LPBH9mPAMu4-rg
-Get a glimpse of how personalized, AI-powered learning feels like!
+
 
